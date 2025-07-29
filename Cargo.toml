@@ -1,0 +1,32 @@
+[package]
+name = "hells_hollow"
+version = "0.1.0"
+edition = "2024"
+
+[lib]
+crate-type = ["cdylib"]
+
+[package.metadata.wdk.driver-model]
+driver-type = "WDM"
+
+[features]
+default = []
+nightly = ["wdk/nightly", "wdk-sys/nightly"]
+
+[profile.dev]
+panic = "abort"
+lto = true
+
+[profile.release]
+panic = "abort"
+lto = true
+
+[dependencies]
+wdk = "0.3.1"
+wdk-alloc = "0.3.1"
+wdk-panic = "0.3.1"
+wdk-sys = "0.4.0"
+
+[build-dependencies]
+wdk-build = "0.4.0"
+
