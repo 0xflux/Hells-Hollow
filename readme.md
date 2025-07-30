@@ -3,7 +3,7 @@
 Hell's Hollow is a Windows 11 compatible rootkit technique that is equivalent to a modern (PatchGuard and HyperGuard) resistant technique to effectively
 perform SSDT Hooking (System Service Dispatch Table) - bypassing all previous defence mechanisms put in the kernel.
 
-This technique works by abusing an undocumented Alternate Syscall handler mechanism in the kernel, within which we are able to climb the stack and 
+This technique works by abusing an undocumented Alternate Syscall handler mechanism in the kernel, within which we are able to directly
 alter the KTRAP_FRAME, allowing us to effectively hook the SSDT in Windows 11. We are able to decide to either let the OS continue to dispatch the 
 system call (and giving us the ability to alter the arguments passed to it), or to alter it on behalf of the dispatcher, and return straight back to 
 userland - so the calling application thinks the system call was dispatched normally.
@@ -11,11 +11,12 @@ userland - so the calling application thinks the system call was dispatched norm
 - [Blog post on Hells Hollow](https://fluxsec.red/hells-hollow-a-new-SSDT-hooking-technique-with-alt-syscalls-rootkit)
 - [Blog post on Alt Syscalls internals](https://fluxsec.red/alt-syscalls-for-windows-11)
 
-This process looks as follows:
+Shoutout to [@sixtyvividtails](https://x.com/sixtyvividtails) who made a key [observation](https://x.com/sixtyvividtails/status/1950581722070069404) in my first implementation of this, that the KTRAP discovery can be simplified
+by reading directly from the KTHREAD. The repo is now updated to reflect this, and it now works even better with no stack modification required!
 
-![Hells Hollos SSDT hooking Windows 11](img/full.svg)
+## Setup
 
-I have uploaded this repo as a MVP for producing the technique, it is written in **Rust**, but it works. If you are new to Rust, and simply want to get it up
+I have uploaded this repo as a MVP for producing the technique (in RUst). If you are new to Rust, and simply want to get it up
 and running, follow the environment config steps at [Windows Rust Drivers](https://github.com/microsoft/windows-drivers-rs) project and run `cargo make`.
 
 It will spit our a driver that you can simply load with OSR or whatever tool you want. This POC is designed to hook `NtTraceEvent` in the kernel (via Alt Syscalls),
@@ -31,3 +32,10 @@ const NT_TRACE_EVENT_SSN: u32 = 0x005e;
 Then, via either a kernel debugger for the Alt Syscall callback / trap, or a usermode debugger on the syscall itself, you'll see what's going on under the hood.
 
 Video POC coming soon with a bit more of an explanation on what is going on, until then, read my blog :).
+
+### References
+
+- [Alt Syscalls for Windows 11 - 0xflux](https://fluxsec.red/alt-syscalls-for-windows-11)
+- [System Calls Tracing & Monitoring via Alternative Handlers - Xacone](https://xacone.github.io/BestEdrOfTheMarketV3.html#4)
+- [WinAltSyscallHandler - 0xcpu](https://github.com/0xcpu/WinAltSyscallHandler/tree/master)
+- [Symbols](https://www.vergiliusproject.com/kernels/x64/windows-11/24h2)

