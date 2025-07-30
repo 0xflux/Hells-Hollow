@@ -14,6 +14,10 @@ userland - so the calling application thinks the system call was dispatched norm
 Shoutout to [@sixtyvividtails](https://x.com/sixtyvividtails) who made a key [observation](https://x.com/sixtyvividtails/status/1950581722070069404) in my first implementation of this, that the KTRAP discovery can be simplified
 by reading directly from the KTHREAD. The repo is now updated to reflect this, and it now works even better with no stack modification required!
 
+Altering the return value from a syscall via the hook:
+
+![Hells Hollow SSDT hooking Windows 11 Rust](img/poc.png)
+
 ## Setup
 
 I have uploaded this repo as a MVP for producing the technique (in RUst). If you are new to Rust, and simply want to get it up
