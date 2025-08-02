@@ -37,7 +37,7 @@ unsafe extern "system" {
 }
 
 const SLOT_ID: u32 = 0;
-const SSN_COUNT: usize = 0x500;
+const SSN_COUNT: u32 = 0x500;
 
 const NT_TRACE_EVENT_SSN: u32 = 0x005e;
 
@@ -64,8 +64,8 @@ struct PspSyscallProviderDispatchContext {
 
 #[repr(C)]
 struct AltSyscallDispatchTable {
-    pub count: u64,
-    pub descriptors: [u32; SSN_COUNT],
+    pub count: u32,
+    pub descriptors: [u32; SSN_COUNT as usize],
 }
 
 #[derive(Copy, Clone)]
@@ -156,8 +156,8 @@ impl AltSyscalls {
         //
         let callback_address = syscall_handler as usize;
         let metadata_table = Box::new(AltSyscallDispatchTable {
-            count: SSN_COUNT as _,
-            descriptors: [0; SSN_COUNT],
+            count: SSN_COUNT,
+            descriptors: [0; SSN_COUNT as usize],
         });
 
         // Leak the box so that we don't (for now) have to manage the memory; yes, this is a memory leak in the kernel, I'll fix it later.
@@ -174,7 +174,7 @@ impl AltSyscalls {
         }
 
         for i in 0..SSN_COUNT {
-            unsafe { &mut *(p_metadata_table as *mut AltSyscallDispatchTable) }.descriptors[i] =
+            unsafe { &mut *(p_metadata_table as *mut AltSyscallDispatchTable) }.descriptors[i as usize] =
                 ((rva_offset_callback as u32) << 4)
                     | (GENERIC_PATH_FLAGS | (NUM_QWORD_STACK_ARGS_TO_CPY & 0xF));
         }
