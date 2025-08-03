@@ -18,6 +18,12 @@ Altering the return value from a syscall via the hook:
 
 ![Hells Hollow SSDT hooking Windows 11 Rust](img/poc.png)
 
+### Limitations 
+
+Thanks to some testing by [Xacone](https://github.com/Xacone), we now know that **HVCI** prevents writing to the `PspServiceDescriptorGroupTable ` structure; so this technique is blocked by HVCI. From my own
+testing, it appears that this is still resistant to both PatchGuard and HyperGuard under VBS. I used [ssde](https://github.com/valinet/ssde/) to load my driver whilst Secure Boot and VBS were enabled, of which it is
+my understanding should be enough to test it against HyperGuard. This was done with debug mode off, which should also allow PatchGuard full authority to detect and block (BugCheck) the technique.
+
 ## Setup
 
 I have uploaded this repo as a MVP for producing the technique (in RUst). If you are new to Rust, and simply want to get it up
