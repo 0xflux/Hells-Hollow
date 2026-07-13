@@ -1,6 +1,6 @@
 # Hells Hollow
 
-Hell's Hollow is a Windows 11 compatible rootkit technique that is equivalent to a modern (PatchGuard and HyperGuard) resistant technique to effectively
+Hell's Hollow is a Windows 11 compatible rootkit technique that is equivalent to a modern (PatchGuard) resistant technique to effectively
 perform SSDT Hooking (System Service Dispatch Table) - bypassing all previous defence mechanisms put in the kernel.
 
 This technique works by abusing an undocumented Alternate Syscall handler mechanism in the kernel, within which we are able to directly
@@ -20,9 +20,7 @@ Altering the return value from a syscall via the hook:
 
 ### Limitations 
 
-Thanks to some testing by [Xacone](https://github.com/Xacone), we now know that **HVCI** prevents writing to the `PspServiceDescriptorGroupTable ` structure; so this technique is blocked by HVCI. From my own
-testing, it appears that this is still resistant to both PatchGuard and HyperGuard under VBS. I used [ssde](https://github.com/valinet/ssde/) to load my driver whilst Secure Boot and VBS were enabled, of which it is
-my understanding should be enough to test it against HyperGuard. This was done with debug mode off, which should also allow PatchGuard full authority to detect and block (BugCheck) the technique.
+Thanks to some testing by [Xacone](https://github.com/Xacone), we now know that **HVCI** prevents writing to the `PspServiceDescriptorGroupTable ` structure; so this technique is blocked by HVCI.
 
 ## Setup
 
